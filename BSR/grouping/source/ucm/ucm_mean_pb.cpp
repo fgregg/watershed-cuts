@@ -131,81 +131,99 @@ class Region
     map<int, Neighbor_Region, less<int> > neighbors;
     list<Bdry_element> boundary;
     
-	Region(){}
+    Region(){}
 
-    Region(const int& l) { elements.push_back(l); }
+    Region(const int& l) { 
+    	elements.push_back(l); 
+    }
 
     ~Region(){}
 
-    void merge( Region& r, int* labels, const int& label, double* ucm, const double& saliency, const int& son, const int& tx );
+    void merge( Region& r, 
+                int* labels, 
+                const int& label, 
+                double* ucm, 
+                const double& saliency, 
+                const int& son, 
+                const int& tx );
 
 };
 
-void Region::merge( Region& r, int* labels, const int& label, double* ucm, const double& saliency, const int& son, const int& tx )
-{
-    /* 			I. BOUNDARY        */
+void Region::merge( Region& r, 
+                    int* labels, 
+                    const int& label, 
+                    double* ucm, 
+                    const double& saliency, 
+                    const int& son, 
+                    const int& tx ) {
 
-    // 	Ia. update father's boundary
-    list<Bdry_element>::iterator itrb, itrb2;
-    itrb = boundary.begin();
-    while ( itrb != boundary.end() )
-    {
-     		if( labels[(*itrb).cc_neigh] == son )
-         {
-            itrb2 = itrb;
-         	++itrb;
-            boundary.erase(itrb2);
-         }
-         else ++itrb;
+  /* I. BOUNDARY        */
+
+  //  Ia. update father's boundary
+  list<Bdry_element>::iterator itrb, itrb2;
+  itrb = boundary.begin();
+  while ( itrb != boundary.end() ) {
+    if( labels[(*itrb).cc_neigh] == son ) {
+      itrb2 = itrb;
+      ++itrb;
+      boundary.erase(itrb2);
+    }
+    else {
+      ++itrb;
+    }
+  }
+
+  int coord_contour;
+
+  //  Ib. move son's boundary to father
+  for( itrb = r.boundary.begin(); itrb != r.boundary.end(); ++itrb ) {
+    if (ucm[(*itrb).coord] < saliency ) { 
+      ucm[(*itrb).coord] = saliency;
+    }
+    if ( labels[(*itrb).cc_neigh] != label ) {
+      boundary.push_back( Bdry_element(*itrb) );
     }
 
-    int coord_contour;
+  }
+  r.boundary.erase( r.boundary.begin(), r.boundary.end() );
 
-    //	Ib. move son's boundary to father
-    for( itrb = r.boundary.begin(); itrb != r.boundary.end(); ++itrb )
-    {
-      if (ucm[(*itrb).coord] < saliency ) ucm[(*itrb).coord] = saliency;
+  /* II. ELEMENTS      */
 
-      if ( labels[(*itrb).cc_neigh] != label )
-      	boundary.push_back( Bdry_element(*itrb) );
-
+  for( list<int>::iterator p = r.elements.begin(); p != r.elements.end(); ++p ) {
+    labels[*p] = label;
     }
-    r.boundary.erase( r.boundary.begin(), r.boundary.end() );
-
-     /* 			II. ELEMENTS      */
-
-    for( list<int>::iterator p = r.elements.begin(); p != r.elements.end(); ++p ) labels[*p] = label;
-    elements.insert( elements.begin(), r.elements.begin(), r.elements.end() );
-    r.elements.erase( r.elements.begin(), r.elements.end() );
+  elements.insert( elements.begin(), r.elements.begin(), r.elements.end() );
+  r.elements.erase( r.elements.begin(), r.elements.end() );
     
 
-    /* 			III. NEIGHBORS        */
+  /* III. NEIGHBORS        */
+  map<int,Neighbor_Region, less<int> >::iterator itr, itr2;
 
-    map<int,Neighbor_Region, less<int> >::iterator itr, itr2;
-
-    // 	IIIa. remove inactive neighbors from father
-    itr = neighbors.begin();
-    while( itr != neighbors.end() )
-    {
-  			if ( labels[(*itr).first] != (*itr).first )
-         {
-    			itr2 = itr;
-    			++itr;
-  	 			neighbors.erase(itr2);
-  			} else ++itr;
+  //  IIIa. remove inactive neighbors from father
+  itr = neighbors.begin();
+  while( itr != neighbors.end() ) {
+    if ( labels[(*itr).first] != (*itr).first ) {
+      itr2 = itr;
+      ++itr;
+      neighbors.erase(itr2);
+    } 
+    else {
+      ++itr;
     }
+  }
 
-    // 	IIIb. remove inactive neighbors from son y and neighbors belonging to father
-    itr = r.neighbors.begin();
-    while ( itr != r.neighbors.end() )
-    {
-  	 		if ( ( labels[(*itr).first] != (*itr).first ) || ( labels[(*itr).first] == label ) )
-         {
-    			itr2 = itr;
-    			++itr;
-            r.neighbors.erase(itr2);
-         } else ++itr;
+  //  IIIb. remove inactive neighbors from son y and neighbors belonging to father
+  itr = r.neighbors.begin();
+  while ( itr != r.neighbors.end() ) {
+    if ( ( labels[(*itr).first] != (*itr).first ) || ( labels[(*itr).first] == label ) ) {
+      itr2 = itr;
+      ++itr;
+      r.neighbors.erase(itr2);
+    } 
+    else {
+      ++itr;
     }
+  }
 }
 
 #endif
@@ -235,9 +253,12 @@ void complete_contour_map(double* ucm, const int& txc, const int& tyc)
 }
 
 /***************************************************************************************************************************/
-void compute_ucm
-(	double* local_boundaries, int* initial_partition, const int& totcc, double* ucm, const int& tx, const int& ty)
-{
+void compute_ucm( double* local_boundaries, 
+                  int* initial_partition, 
+                  const int& totcc, //Total connected components?
+                  double* ucm, 
+                  const int& tx, 
+                  const int& ty) {
   // I. INITIATE
   int p,c;
   int* labels = new int[totcc];
@@ -253,10 +274,14 @@ void compute_ucm
   double totalPb, totalBdry, dissimilarity;
   int v,px;
 
-   for( p = 0; p < (2*tx+1)*(2*ty+1); p++ ) ucm[p] = 0.0;
+  for( p = 0; p < (2*tx+1)*(2*ty+1); p++ ) {
+    ucm[p] = 0.0;
+  }
   
-   // INITIATE REGI0NS
-   for ( c = 0; c < totcc; c++ ) R[c] = Region(c);
+  // INITIATE REGI0NS
+  for ( c = 0; c < totcc; c++ ) {
+    R[c] = Region(c);
+  }
    
    // INITIATE UCM
   int vx[4] = { 1, 0, -1,  0};
@@ -268,108 +293,122 @@ void compute_ucm
     xp = p%tx; yp = p/tx;
     for( v = 0; v < 4; v++ )
     {   
-      nxp =  xp + vx[v]; nyp = yp + vy[v]; cnp = nxp + nyp*tx;
-      if ( (nyp >= 0) && (nyp < ty) && (nxp < tx) && (nxp >= 0) && (initial_partition[cnp] != initial_partition[p]) )
-         R[initial_partition[p]].boundary.push_back(Bdry_element(( xp + nxp + 1 ) + ( yp + nyp + 1 )*(2*tx+1), initial_partition[cnp]));
+      nxp =  xp + vx[v]; 
+      nyp = yp + vy[v]; 
+      cnp = nxp + nyp*tx;
+      if ( (nyp >= 0) 
+           && (nyp < ty) 
+           && (nxp < tx) 
+           && (nxp >= 0) 
+           && (initial_partition[cnp] != initial_partition[p]) ) {
+         R[initial_partition[p]].boundary.push_back(Bdry_element(( xp + nxp + 1 ) + ( yp + nyp + 1 )*(2*tx+1), 
+                                                                   initial_partition[cnp]));
+      }
     }
   }
  
-    // INITIATE merging_queue
-   list<Bdry_element>::iterator itrb;
-   for ( c = 0; c < totcc; c++ )
-   {
-      R[c].boundary.sort();
+  // INITIATE merging_queue
+  list<Bdry_element>::iterator itrb;
+  for ( c = 0; c < totcc; c++ ) {
+    R[c].boundary.sort();
       
-      label = (*R[c].boundary.begin()).cc_neigh;
-      totalBdry = 0.0;
-      totalPb = 0.0;
+    label = (*R[c].boundary.begin()).cc_neigh;
+    totalBdry = 0.0;
+    totalPb = 0.0;
       
-      for ( itrb = R[c].boundary.begin(); itrb != R[c].boundary.end(); ++itrb ) 
-      {
-        if ((*itrb).cc_neigh == label)
-        {
-            totalBdry++;
-            totalPb += local_boundaries[(*itrb).coord];
-        }
-        else
-        {
-            R[c].neighbors[label] = Neighbor_Region(totalPb/totalBdry, totalPb, totalBdry);
-            if( label > c )   merging_queue.push(Order_node(totalPb/totalBdry, c, label));
-            label = (*itrb).cc_neigh;
-            totalBdry = 1.0;
-            totalPb = local_boundaries[(*itrb).coord];
-        }
-        
+    for ( itrb = R[c].boundary.begin(); itrb != R[c].boundary.end(); ++itrb ) {
+      if ((*itrb).cc_neigh == label) {
+        totalBdry++;
+        totalPb += local_boundaries[(*itrb).coord];
       }
-      R[c].neighbors[label] = Neighbor_Region(totalPb/totalBdry, totalPb, totalBdry);
-      if( label > c )   merging_queue.push(Order_node(totalPb/totalBdry, c, label));
+      else {
+        R[c].neighbors[label] = Neighbor_Region(totalPb/totalBdry, totalPb, totalBdry);
+        if( label > c ) { 
+          merging_queue.push(Order_node(totalPb/totalBdry, c, label));
+        }
+        label = (*itrb).cc_neigh;
+        totalBdry = 1.0;
+        totalPb = local_boundaries[(*itrb).coord];
+      }
+        
     }
+    R[c].neighbors[label] = Neighbor_Region(totalPb/totalBdry, totalPb, totalBdry);
+    if( label > c ) {
+      merging_queue.push(Order_node(totalPb/totalBdry, c, label));
+    }
+  }
       
    
-   //MERGING
-   Order_node minor;
-   int father, son;
-   map<int,Neighbor_Region,less<int> >::iterator itr;
-   double current_energy = 0.0;
+  //MERGING
+  Order_node minor;
+  int father, son;
+  map<int,Neighbor_Region,less<int> >::iterator itr;
+  double current_energy = 0.0;
 
-   while ( !merging_queue.empty() )
-   {
-   	minor = merging_queue.top(); merging_queue.pop();
-      if( (labels[minor.region1] == minor.region1) && (labels[minor.region2] == minor.region2)		&&
-      	 (minor.energy == R[minor.region1].neighbors[minor.region2].energy) )
-      {
-         if (current_energy <= minor.energy) current_energy = minor.energy;
-         else
-         {
-            printf("\n ERROR : \n");
-            printf("\n current_energy = %f \n", current_energy);
-            printf("\n minor.energy = %f \n\n", minor.energy);
-            delete[] R; delete[] labels;
-			mexErrMsgTxt(" BUG: THIS IS NOT AN ULTRAMETRIC !!! ");
-         } 
+  while ( !merging_queue.empty() ) {
+    minor = merging_queue.top(); 
+    merging_queue.pop();
+      
+    if( (labels[minor.region1] == minor.region1) 
+        && (labels[minor.region2] == minor.region2)		
+        && (minor.energy == R[minor.region1].neighbors[minor.region2].energy) ) {
+      if (current_energy <= minor.energy) { 
+      	current_energy = minor.energy;
+      }
+      else {
+        printf("\n ERROR : \n");
+        printf("\n current_energy = %f \n", current_energy);
+        printf("\n minor.energy = %f \n\n", minor.energy);
+        delete[] R; 
+        delete[] labels;
+        mexErrMsgTxt(" BUG: THIS IS NOT AN ULTRAMETRIC !!! ");
+      } 
          
-         dissimilarity =  R[minor.region1].neighbors[minor.region2].total_pb / R[minor.region1].neighbors[minor.region2].bdry_length ;
+      dissimilarity =  ( R[minor.region1].neighbors[minor.region2].total_pb 
+                         / R[minor.region1].neighbors[minor.region2].bdry_length) ;
          
-         if (minor.region1 < minor.region2)
-               { son = minor.region1; father = minor.region2; }
-         else
-               { son = minor.region2; father = minor.region1; }
+      if (minor.region1 < minor.region2){ 
+      	son = minor.region1; 
+      	father = minor.region2; 
+      }
+      else {
+        son = minor.region2; 
+        father = minor.region1; 
+      }
          
-         R[father].merge(R[son], labels, father, ucm, dissimilarity, son, tx);
+      R[father].merge(R[son], labels, father, ucm, dissimilarity, son, tx);
 
-         // move and update neighbors
-         while ( R[son].neighbors.size() > 0 )
-         {
-             itr = R[son].neighbors.begin();
+      // move and update neighbors
+      while ( R[son].neighbors.size() > 0 ) {
+        itr = R[son].neighbors.begin();
 
-             R[father].neighbors[(*itr).first].total_pb += (*itr).second.total_pb;
-             R[(*itr).first].neighbors[father].total_pb += (*itr).second.total_pb;
+        R[father].neighbors[(*itr).first].total_pb += (*itr).second.total_pb;
+        R[(*itr).first].neighbors[father].total_pb += (*itr).second.total_pb;
 
-             R[father].neighbors[(*itr).first].bdry_length += (*itr).second.bdry_length;
-             R[(*itr).first].neighbors[father].bdry_length += (*itr).second.bdry_length;
+        R[father].neighbors[(*itr).first].bdry_length += (*itr).second.bdry_length;
+        R[(*itr).first].neighbors[father].bdry_length += (*itr).second.bdry_length;
 
-             R[son].neighbors.erase(itr);
-         }
+        R[son].neighbors.erase(itr);
+      }
 
-         // update merging_queue
-         for (itr = R[father].neighbors.begin(); itr != R[father].neighbors.end(); ++itr )
-         {
+      // update merging_queue
+      for (itr = R[father].neighbors.begin(); itr != R[father].neighbors.end(); ++itr ) {
 
-             dissimilarity = R[father].neighbors[(*itr).first].total_pb / R[father].neighbors[(*itr).first].bdry_length;
+        dissimilarity = R[father].neighbors[(*itr).first].total_pb / R[father].neighbors[(*itr).first].bdry_length;
              
-             merging_queue.push(Order_node(dissimilarity, (*itr).first, father));
-             R[father].neighbors[(*itr).first].energy = dissimilarity;
-             R[(*itr).first].neighbors[father].energy = dissimilarity;
+        merging_queue.push(Order_node(dissimilarity, (*itr).first, father));
+        R[father].neighbors[(*itr).first].energy = dissimilarity;
+        R[(*itr).first].neighbors[father].energy = dissimilarity;
 
-         }
-     }
-   }
+      }
+    }
+  }
 
-   complete_contour_map(ucm, 2*tx+1, 2*ty+1 );
+  complete_contour_map(ucm, 2*tx+1, 2*ty+1 );
 
-	delete[] R; delete[] labels;
+  delete[] R; 
+  delete[] labels;
 
-   
 }
 
 /*************************************************************************************************/

@@ -35,18 +35,24 @@ class Order_node
     int region1;
     int region2;
 
-    Order_node(){ energy = 0.0; region1 = 0; region2 = 0; }
+    Order_node() { 
+      	energy = 0.0; region1 = 0; region2 = 0; 
+      }
     
-	Order_node( const double& e, const int& rregion1, const int& rregion2 )
-    {
-      energy = e;
-      region1 = rregion1;
-      region2 = rregion2;
-    }
+    Order_node( const double& e, const int& rregion1, const int& rregion2) {
+        energy = e;
+        region1 = rregion1;
+        region2 = rregion2;
+      }
     
-	~Order_node(){}
+    ~Order_node(){}
+    
     // LEXICOGRAPHIC ORDER on priority queue: (energy,label)
-	bool operator < (const Order_node& x) const { return ( ( energy > x.energy ) ||(( energy == x.energy ) && (region1 > x.region1)) ||(( energy == x.energy ) && (region1 == x.region1)&& (region2 > x.region2))); }
+    bool operator < (const Order_node& x) const { 
+    	return ( ( energy > x.energy ) 
+    	         ||(( energy == x.energy ) && (region1 > x.region1)) 
+    	         ||(( energy == x.energy ) && (region1 == x.region1) && (region2 > x.region2))); 
+        }
 };
 
 #endif
@@ -64,13 +70,12 @@ class Neighbor_Region
     double bdry_length;
     
     Neighbor_Region()
-    	{ energy = 0.0; total_pb = 0.0; bdry_length = 0.0; }
+      { energy = 0.0; total_pb = 0.0; bdry_length = 0.0; }
 
     Neighbor_Region(const Neighbor_Region& v)
-    	{ energy = v.energy; total_pb = v.total_pb; bdry_length = v.bdry_length; }
+      { energy = v.energy; total_pb = v.total_pb; bdry_length = v.bdry_length; }
 
-    Neighbor_Region(const double& en, const double& tt, const double& bor )
-    {
+    Neighbor_Region(const double& en, const double& tt, const double& bor ) {
       energy = en;
       total_pb = tt;
       bdry_length = bor;
@@ -89,21 +94,26 @@ class Neighbor_Region
 
 class Bdry_element
 {
-public:
-   int coord;
-   int cc_neigh;
+  public:
+    int coord;
+    int cc_neigh;
    
-   Bdry_element(){}
+    Bdry_element(){}
    
-   Bdry_element(const int& c, const int& v) { coord = c; cc_neigh = v;}
+    Bdry_element(const int& c, const int& v) { coord = c; cc_neigh = v;}
    
-   Bdry_element(const Bdry_element& n) { coord = n.coord; cc_neigh = n.cc_neigh;}
+    Bdry_element(const Bdry_element& n) { coord = n.coord; cc_neigh = n.cc_neigh;}
    
-   ~Bdry_element(){}
+    ~Bdry_element(){}
 
-   bool operator ==(const Bdry_element& n) const { return ( ( coord == n.coord) && ( cc_neigh == n.cc_neigh) ) ; }
-   // LEXICOGRAPHIC ORDER: (cc_neigh, coord)
-   bool operator < (const Bdry_element& n) const { return ( (cc_neigh < n.cc_neigh) || ((cc_neigh == n.cc_neigh) && ( coord < n.coord))); }
+    bool operator ==(const Bdry_element& n) const { 
+    	return ( ( coord == n.coord) && ( cc_neigh == n.cc_neigh) ) ; 
+      }
+    // LEXICOGRAPHIC ORDER: (cc_neigh, coord)
+    bool operator < (const Bdry_element& n) const { 
+    	return ( (cc_neigh < n.cc_neigh) 
+    	         || ((cc_neigh == n.cc_neigh) && ( coord < n.coord))); 
+      }
 
 };
 

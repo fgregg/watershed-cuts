@@ -230,26 +230,27 @@ void Region::merge( Region& r,
 
 /*************************************************************/
 
-void complete_contour_map(double* ucm, const int& txc, const int& tyc)
+void complete_contour_map(double* ucm, const int& txc, const int& tyc) {
 /* complete contour map by max strategy on Khalimsky space  */
-{
-   int vx[4] = { 1, 0, -1,  0 };
-   int vy[4] = { 0, 1,  0, -1 };
-   int nxp, nyp, cv;
-   double maximo;
+  int vx[4] = { 1, 0, -1,  0 };
+  int vy[4] = { 0, 1,  0, -1 };
+  int nxp, nyp, cv;
+  double maximo;
    
-   for( int x = 0; x < txc; x = x + 2 ) for( int y = 0; y < tyc; y = y + 2 )
-   {
+  for( int x = 0; x < txc; x = x + 2 ) {
+    for( int y = 0; y < tyc; y = y + 2 ) {
       maximo = 0.0;
-   	for( int v = 0; v < 4; v++ )
-   	{
-      	nxp =  x + vx[v] ; nyp = y + vy[v]; cv = nxp + nyp * txc;
-      	if ( (nyp >= 0) && (nyp < tyc) && (nxp < txc) && (nxp >= 0) && ( maximo < ucm[cv] ) )
-         	maximo = ucm[cv];
-   	}
+   	  for( int v = 0; v < 4; v++ ) {
+        nxp =  x + vx[v] ; 
+        nyp = y + vy[v]; 
+        cv = nxp + nyp * txc;
+        if ( (nyp >= 0) && (nyp < tyc) && (nxp < txc) && (nxp >= 0) && ( maximo < ucm[cv] ) ) {
+          maximo = ucm[cv];
+        }
+   	  }   
       ucm[x + y*txc] = maximo;
-   }
-
+    }
+  }
 }
 
 /***************************************************************************************************************************/
